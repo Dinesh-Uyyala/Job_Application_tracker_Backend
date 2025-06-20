@@ -8,10 +8,20 @@ exports.getJobs = (req, res) => {
   });
 };
 
+// get specific job by ID (public)
+exports.getJobById = (req, res) => {
+  const jobId = req.params.jobId;
+  db.query('SELECT * FROM jobs WHERE id = ?', [jobId], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ message: 'Job not found' });
+    res.status(200).json(results[0]);
+  });
+};
+
 // Get jobs posted by a recruiter (recruiter only)
 exports.getRecruiterJobs = (req, res) => {
   const recruiterId = req.params.recruiterId;
-  db.query('SELECT * FROM jobs WHERE recruiter_id = ?', [recruiterId], (err, results) => {
+  db.query('SELECT * FROM jobs WHERE createdBy = ?', [recruiterId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.status(200).json(results);
   });
@@ -64,7 +74,7 @@ exports.editJob = (req, res) => {
   const jobId = req.params.jobId;
   const recruiter_id = req.user.id;
   db.query(
-    'UPDATE jobs SET title = ?, status = ? WHERE id = ? AND recruiter_id = ?',
+    'UPDATE jobs SET title = ?, status = ? WHERE id = ? AND updatedBy = ?',
     [title, status, jobId, recruiter_id],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -85,6 +95,22 @@ exports.deleteJob = (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       if (result.affectedRows === 0) return res.status(403).json({ message: 'Not allowed' });
       res.status(200).json({ message: 'Job deleted successfully!' });
+    }
+  );
+};
+
+// Check if a job is applied for (recruiter only)
+exports.appliedForJob = (req, res) => {
+  const jobId = req.params.jobId;
+  const recruiterId = req.user.id;
+
+  db.query(
+    'SELECT * FROM applications WHERE jobId = ? AND createdBy = ?',
+    [jobId, recruiterId],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (results.length === 0) return res.status(404).json({ message: 'No applications found for this job' });
+      res.status(200).json(results);
     }
   );
 };
