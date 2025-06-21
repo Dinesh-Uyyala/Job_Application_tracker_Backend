@@ -128,29 +128,31 @@ exports.appliedStatus = (req, res) => {
         return res.status(500).json({ error: err.message });
       }
 
-      // If no record found, return status "Not Applied" instead of 404
       if (results.length === 0) {
         return res.status(200).json({ status: 'Not Applied' });
       }
 
-      // If application exists, return its actual status
       res.status(200).json({ status: results[0].status });
     }
   );
 };
 
+
 // Submit a job application (jobseeker)
-exports.submitApplication = (req, res) => {
-  const { jobId, userId, name, email, phone, resumeLink } = req.body;
+exports.applyForJob = (req, res) => {
+  const { jobId, userId, name, email, mobile, resumeLink } = req.body;
 
   const query = `
-    INSERT INTO applications (jobId, userId, name, email, phone, resumeLink, status)
+    INSERT INTO applications (jobId, userId, name, email, mobile, resumeLink, status)
     VALUES (?, ?, ?, ?, ?, ?, 'Applied')
   `;
 
-  db.query(query, [jobId, userId, name, email, phone, resumeLink], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    res.status(201).json({ message: 'Application submitted successfully' });
+  db.query(query, [jobId, userId, name, email, mobile, resumeLink], (err, result) => {
+    if (err) {
+      console.error('Error inserting application:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    res.status(200).json({ message: 'Application submitted successfully' });
   });
 };
+
